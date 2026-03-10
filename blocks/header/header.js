@@ -1,4 +1,4 @@
-import { getMetadata } from '../../scripts/aem.js';
+import { getMetadata, decorateIcons } from '../../scripts/aem.js';
 import { loadFragment } from '../fragment/fragment.js';
 
 // media query match that indicates mobile/tablet width
@@ -7,6 +7,7 @@ const isDesktop = window.matchMedia('(min-width: 900px)');
 function closeOnEscape(e) {
   if (e.code === 'Escape') {
     const nav = document.getElementById('nav');
+    if (!nav) return;
     const navSections = nav.querySelector('.nav-sections');
     if (!navSections) return;
     const navSectionExpanded = navSections.querySelector('[aria-expanded="true"]');
@@ -77,7 +78,7 @@ function toggleMenu(nav, navSections, forceExpanded = null) {
   document.body.style.overflowY = (expanded || isDesktop.matches) ? '' : 'hidden';
   nav.setAttribute('aria-expanded', expanded ? 'false' : 'true');
   toggleAllNavSections(navSections, expanded || isDesktop.matches ? 'false' : 'true');
-  button.setAttribute('aria-label', expanded ? 'Open navigation' : 'Close navigation');
+  if (button) button.setAttribute('aria-label', expanded ? 'Open navigation' : 'Close navigation');
   // enable nav dropdown keyboard accessibility
   if (navSections) {
     const navDrops = navSections.querySelectorAll('.nav-drop');
@@ -124,32 +125,91 @@ export default async function decorate(block) {
   nav.id = 'nav';
   while (fragment.firstElementChild) nav.append(fragment.firstElementChild);
 
-  const classes = ['brand', 'sections', 'tools'];
-  classes.forEach((c, i) => {
-    const section = nav.children[i];
-    if (section) section.classList.add(`nav-${c}`);
-  });
+  // NICO Life Structure: top-bar and main-nav
+  const topBarContainer = document.createElement('div');
+  topBarContainer.classList.add('nav-top-bar');
 
-  const navBrand = nav.querySelector('.nav-brand');
-  const brandLink = navBrand.querySelector('.button');
-  if (brandLink) {
-    brandLink.className = '';
-    brandLink.closest('.button-container').className = '';
+  const mainNavContainer = document.createElement('div');
+  mainNavContainer.classList.add('nav-main-nav');
+
+  const innerMainNavContainer = document.createElement('div');
+  innerMainNavContainer.classList.add('nav-main-nav-inner');
+  mainNavContainer.append(innerMainNavContainer);
+
+  const navSectionsRaw = [...nav.children];
+  console.log('Nav sections found:', navSectionsRaw.length);
+
+  // Identify sections by content
+  const brand = navSectionsRaw.find((s) => s.querySelector('picture, img'));
+  const social = navSectionsRaw.find((s) => s.querySelector('.icon'));
+
+  // Distinguish between main nav and tools: main nav usually has more list items
+  const lists = navSectionsRaw.filter((s) => s.querySelector('ul') && s !== brand && s !== social);
+  let sections;
+  let tools;
+
+  if (lists.length >= 2) {
+    // Pick the one with more LI items as 'sections'
+    lists.sort((a, b) => b.querySelectorAll('li').length - a.querySelectorAll('li').length);
+    [sections, tools] = lists;
+  } else if (lists.length === 1) {
+    sections = lists[0];
+    tools = navSectionsRaw.find((s) => s !== brand && s !== social && s !== sections);
+  } else {
+    tools = navSectionsRaw.find((s) => s !== brand && s !== social);
   }
 
-  const navSections = nav.querySelector('.nav-sections');
-  if (navSections) {
-    navSections.querySelectorAll(':scope .default-content-wrapper > ul > li').forEach((navSection) => {
+  if (brand) {
+    brand.classList.add('nav-brand');
+    topBarContainer.append(brand);
+  }
+
+  if (tools) {
+    tools.classList.add('nav-tools');
+    topBarContainer.append(tools);
+  }
+
+  if (sections) {
+    sections.classList.add('nav-sections');
+    innerMainNavContainer.append(sections);
+
+    sections.querySelectorAll(':scope .default-content-wrapper > ul > li').forEach((navSection) => {
       if (navSection.querySelector('ul')) navSection.classList.add('nav-drop');
       navSection.addEventListener('click', () => {
         if (isDesktop.matches) {
           const expanded = navSection.getAttribute('aria-expanded') === 'true';
-          toggleAllNavSections(navSections);
+          toggleAllNavSections(sections);
           navSection.setAttribute('aria-expanded', expanded ? 'false' : 'true');
         }
       });
     });
   }
+
+  if (social) {
+    social.classList.add('nav-social');
+    innerMainNavContainer.append(social);
+  }
+
+  // Search component
+  const search = document.createElement('div');
+  search.classList.add('nav-search');
+  search.innerHTML = `
+        <input class="nav-search-input" type="text" name="q" placeholder="Search..." aria-label="Search">
+  `;
+  innerMainNavContainer.append(search);
+
+  // Toggle search input on click
+  // const searchBtn = search.querySelector('.nav-search-button');
+  // searchBtn.addEventListener('click', () => {
+  //   search.classList.toggle('active');
+  //   if (search.classList.contains('active')) {
+  //     search.querySelector('input').focus();
+  //   }
+  // });
+
+  nav.innerHTML = '';
+  nav.append(topBarContainer);
+  nav.append(mainNavContainer);
 
   // hamburger for mobile
   const hamburger = document.createElement('div');
@@ -157,15 +217,17 @@ export default async function decorate(block) {
   hamburger.innerHTML = `<button type="button" aria-controls="nav" aria-label="Open navigation">
       <span class="nav-hamburger-icon"></span>
     </button>`;
-  hamburger.addEventListener('click', () => toggleMenu(nav, navSections));
-  nav.prepend(hamburger);
+  hamburger.addEventListener('click', () => toggleMenu(nav, sections));
+  innerMainNavContainer.append(hamburger);
   nav.setAttribute('aria-expanded', 'false');
-  // prevent mobile nav behavior on window resize
-  toggleMenu(nav, navSections, isDesktop.matches);
-  isDesktop.addEventListener('change', () => toggleMenu(nav, navSections, isDesktop.matches));
+
+  // Initial state and layout change handling
+  isDesktop.addEventListener('change', () => toggleMenu(nav, sections, isDesktop.matches));
 
   const navWrapper = document.createElement('div');
   navWrapper.className = 'nav-wrapper';
   navWrapper.append(nav);
   block.append(navWrapper);
+
+  decorateIcons(nav);
 }
