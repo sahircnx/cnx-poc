@@ -109,7 +109,7 @@ header .nav-brand img {
 
 /* Tools (Top bar links/contact) */
 header .nav-tools>.default-content-wrapper>ul {
-  max-width: 70%;
+  max-width: 76%;
   flex-wrap: wrap;
   justify-content: flex-end;
 }
@@ -139,11 +139,15 @@ header .nav-tools p {
 }
 
 header .nav-tools a,
-header .nav-tools strong {
+header .nav-tools strong,
+header .nav-tools li {
   text-decoration: none;
-  font-weight: 400;
   font-size: 13px;
   color: #28aae1;
+}
+
+header .nav-tools strong {
+  font-weight: 600;
 }
 
 header .nav-tools a:hover {
