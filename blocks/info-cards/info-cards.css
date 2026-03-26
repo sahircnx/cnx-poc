@@ -1,0 +1,65 @@
+.info-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 1440px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.info-card {
+    background-color: #ffffff;
+    border: 1.5px solid #28aae1;
+    border-radius: 10px;
+    padding: 30px 20px;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    height: auto;
+}
+
+.info-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+}
+
+.info-card-heading {
+    color: #00247d;
+    font-family: "Open Sans", Arial, sans-serif;
+    font-size: 21px;
+    font-weight: 700;
+    margin: 0 0 15px 0;
+    line-height: 1.2;
+}
+
+.info-card-text {
+    color: #00247d;
+    font-family: "Open Sans", Arial, sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* Desktop row layout */
+@media (min-width: 900px) {
+    .info-cards {
+        flex-direction: row;
+        justify-content: center;
+        align-items: stretch;
+        /* ensures equal height */
+    }
+
+    .info-card {
+        flex: 1;
+        max-width: calc(33.333% - 14px);
+    }
+}
+
+/* Tablet adjustments */
+@media (min-width: 600px) and (max-width: 899px) {
+    .info-cards {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+}

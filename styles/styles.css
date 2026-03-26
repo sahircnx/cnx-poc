@@ -333,3 +333,9 @@ main img {
   height: 100%;
   width: 100%;
 }
+
+.image.separator-image.block {
+  margin-top: -36px;
+  position: relative;
+  z-index: 9;
+}
